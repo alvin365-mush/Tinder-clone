@@ -30,8 +30,9 @@ const ROTATION = 60;
 const SWIPE_VELOCITY = 800;
 
 const AnimatedStack = (props) => {
-  const { data, renderItem, onSwipeRight, onSwipeLeft } = props;
+  const { data, renderItem, onSwipeRight, onSwipeLeft, setCurrentUser } = props;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [eventVelocity, setEventVelocity] = useState(0);
   const [nextIndex, setNextIndex] = useState(currentIndex + 1);
 
   const currentProfile = data[currentIndex];
@@ -88,18 +89,20 @@ const AnimatedStack = (props) => {
       //console.log("Touch x:", event.translationX);
     },
     onEnd: (event) => {
+      setEventVelocity(event.velocityX);
       if (Math.abs(event.velocityX) < SWIPE_VELOCITY) {
         translateX.value = withSpring(0);
 
         return;
       }
       translateX.value = withSpring(
-        event.velocityX > 0 ? hiddenTranslateX : -hiddenTranslateX, //or hiddenTranslate * Math.sign(event.velocityX)
+        hiddenTranslateX * Math.sign(event.velocityX),
+        //event.velocityX > 0 ? hiddenTranslateX : -hiddenTranslateX, //or hiddenTranslate * Math.sign(event.velocityX)
         {}, //wait for animation to complete
         () => runOnJS(setCurrentIndex)(currentIndex + 1)
       );
       const onSwipe = event.velocityX > 0 ? onSwipeRight : onSwipeLeft; //javascript
-      onSwipe && runOnJS(onSwipe)(currentProfile);
+      onSwipe && runOnJS(onSwipe)();
 
       //console.log("Ended");
     },
@@ -109,6 +112,10 @@ const AnimatedStack = (props) => {
     translateX.value = 0;
     setNextIndex(currentIndex + 1);
   }, [currentIndex, translateX]);
+
+  useEffect(() => {
+    setCurrentUser(currentProfile);
+  }, [currentProfile, setCurrentUser]);
   return (
     <View style={styles.root}>
       {nextProfile && (
@@ -118,7 +125,7 @@ const AnimatedStack = (props) => {
           </Animated.View>
         </View>
       )}
-      {currentProfile && (
+      {currentProfile ? (
         <PanGestureHandler onGestureEvent={gestureHandler}>
           <Animated.View style={[styles.animatedCard, cardStyle]}>
             <Animated.Image
@@ -134,6 +141,11 @@ const AnimatedStack = (props) => {
             {renderItem({ item: currentProfile })}
           </Animated.View>
         </PanGestureHandler>
+      ) : (
+        <View style={{ justifyContent: "center", alignItems: "center" }}>
+          <Text>Oops! 🤭 </Text>
+          <Text>You ran out of people</Text>
+        </View>
       )}
     </View>
   );
@@ -146,8 +158,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   animatedCard: {
-    width: "100%",
-    height: "70%",
+    width: "95%",
+    height: "90%",
     justifyContent: "center",
     alignItems: "center",
     elevation: 2,
