@@ -1,2 +1,2 @@
 # Tinder-clone
-Tinder's Matching system
+Tinder's Swiping & Matching system
